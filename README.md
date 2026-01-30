@@ -19,53 +19,70 @@ _编写属于自己的 GitHub JavaScript Action，用它来自动化你的工作
 </header>
 
 <!--
-  <<< Author notes: Step 2 >>>
+  <<< Author notes: Step 3 >>>
   Start this step by acknowledging the previous step.
   Define terms and link to docs.github.com.
 -->
 
-## Step 2: 配置你的 Action
+## Step 3: Action 元数据文件
 
-_很好! 继续 :bike:_
+在上一步中我们已经创建好了 Action 元数据文件，本节我们来完善它。
 
-我们已经完成前期准备工作，接下来就来创建我们的 **joke-action** 吧。
+## 关于 Action 的元数据
 
-### :keyboard: 实操环节
+每个 GitHub Action 都必须具有一个 **元数据文件（metadata file）**。并遵守如下规则：
 
-接下来的所有步骤都在 `.github/actions/joke-action` 目录下进行。
+- 文件名**必须**为 `action.yml`.
+- 无论是 Docker 类型还是 JavaScript 类型的 Action 都需要它。
+- 文件内容使用 **YAML** 语法编写。
 
-我们先定义 Action 所**必需的参数**，后续随着功能演进，再逐步添加可选参数。
+这个文件主要定义了 Action 的以下信息：
 
-1. 在 `.github/actions/joke-action` 目录下创建一个新文件 `action.yml`
-2. 打开该文件并添加以下内容：
+| 参数              | 说明                                                                | 是否必需 |
+| ---------------- | ------------------------------------------------------------------- | :--: |
+| **Name**        | Action 的名称，用于在工作流中直观识别。                                    |   ✅  |
+| **Description** | 对 Action 功能的简要描述。                                               |   ✅  |
+| **Inputs**      | 输入参数，允许你在运行时向 Action 传入数据。这些参数在运行器中会作为环境变量使用。 |   ❌  |
+| **Outputs**     | 指定 Action 执行后产生的输出数据，供工作流中后续的步骤使用。                  |   ❌  |
+| **Runs**        | Action 执行时要运行的命令或入口文件。                                      |   ✅  |
+| **Branding**    | 可设置图标和颜色，在 GitHub Marketplace 中个性化展示你的 Action。           |   ❌  |
+
+---
+
+想了解更多，请查看 [Action 元数据语法说明](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/metadata-syntax-for-github-actions)
+
+### :keyboard: 实操环节：补充元数据文件
+
+以下步骤都在 `.github/actions/joke-action` 目录下完成。
+
+我们的 Action 不需要复杂的元数据即可运行。本次我们不会接收任何输入参数，但会定义一个输出参数。
+
+1. 更新元数据文件 `.github/actions/joke-action/action.yml`，内容如下：
 
    ```yaml
    name: "my joke action"
 
    description: "use an external API to retrieve and display a joke"
 
+   outputs:
+     joke-output:
+       description: The resulting joke from the icanhazdadjokes API
+
    runs:
      using: "node16"
      main: "main.js"
    ```
 
-   这段配置的含义是：
-
-   * `name`：Action 的名称（这里叫“my joke action”）；
-   * `description`：Action 的简单描述；
-   * `runs`：定义运行环境为 Node.js 16，并指定入口文件为 `main.js`。
-
-3. 保存 `action.yml` 文件。
-4. 将修改提交并推送到 `main` 分支：
+2. 保存 `action.yml` 文件。
+3. 提交并推送修改到 GitHub：
 
    ```shell
    git add action.yml
-   git commit -m 'create action.yml'
-   git pull
+   git pull   
+   git commit -m 'add metadata for the joke action'
    git push
    ```
-
-5. 等待大约 20 秒后刷新本页面。[GitHub Actions](https://docs.github.com/en/actions) 会自动检测更新，并跳转到下一步。
+4. 等待大约 20 秒后刷新本页面，[GitHub Actions](https://docs.github.com/en/actions) 会自动检测更改并进入下一步。
 
 <footer>
 
