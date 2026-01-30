@@ -1,7 +1,8 @@
 name: JS Actions
 
-于:
-  议题:
+on:
+  dispatch:
+  issues:
     types: [labeled]
 
 jobs:
