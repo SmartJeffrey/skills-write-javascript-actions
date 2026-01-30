@@ -1,7 +1,7 @@
 name: JS Actions
 
-on:
-  issues:
+于:
+  议题:
     types: [labeled]
 
 jobs:
@@ -13,5 +13,3 @@ jobs:
       - uses: actions/checkout@v6
       - name: ha-ha
         uses: ./.github/actions/joke-action
-      - name: 输出笑话
-        run: echo "笑话: ${{ steps.ha-ha.outputs.joke-output }}"
