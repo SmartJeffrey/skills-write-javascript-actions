@@ -19,70 +19,163 @@ _编写属于自己的 GitHub JavaScript Action，用它来自动化你的工作
 </header>
 
 <!--
-  <<< Author notes: Step 3 >>>
+  <<< Author notes: Step 4 >>>
   Start this step by acknowledging the previous step.
   Define terms and link to docs.github.com.
 -->
 
-## Step 3: Action 元数据文件
+## Step 4: 为你的 Action 编写 JavaScript 代码
 
-在上一步中我们已经创建好了 Action 元数据文件，本节我们来完善它。
+_元数据文件已经加好了！ :dancer:_
 
-## 关于 Action 的元数据
+## 文件结构
 
-每个 GitHub Action 都必须具有一个 **元数据文件（metadata file）**。并遵守如下规则：
+在 JavaScript（以及其他编程语言）中，我们通常会把代码拆分成多个模块，方便阅读和维护。
+由于 JavaScript Actions 本质上也是一段根据特定触发条件运行的 JS 程序，我们同样可以采用模块化的方式组织代码。
 
-- 文件名**必须**为 `action.yml`.
-- 无论是 Docker 类型还是 JavaScript 类型的 Action 都需要它。
-- 文件内容使用 **YAML** 语法编写。
+在本步骤中，我们将创建两个文件：
 
-这个文件主要定义了 Action 的以下信息：
+1. **`joke.js`**：负责从外部 API 获取一个笑话；
+2. **`main.js`**：调用上面的模块，并将笑话输出到控制台。
 
-| 参数              | 说明                                                                | 是否必需 |
-| ---------------- | ------------------------------------------------------------------- | :--: |
-| **Name**        | Action 的名称，用于在工作流中直观识别。                                    |   ✅  |
-| **Description** | 对 Action 功能的简要描述。                                               |   ✅  |
-| **Inputs**      | 输入参数，允许你在运行时向 Action 传入数据。这些参数在运行器中会作为环境变量使用。 |   ❌  |
-| **Outputs**     | 指定 Action 执行后产生的输出数据，供工作流中后续的步骤使用。                  |   ❌  |
-| **Runs**        | Action 执行时要运行的命令或入口文件。                                      |   ✅  |
-| **Branding**    | 可设置图标和颜色，在 GitHub Marketplace 中个性化展示你的 Action。           |   ❌  |
+在下一步中，我们还会进一步扩展它的功能。
 
----
+### 获取笑话数据
 
-想了解更多，请查看 [Action 元数据语法说明](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/metadata-syntax-for-github-actions)
+**笑话 API**
 
-### :keyboard: 实操环节：补充元数据文件
+我们首先创建 `joke.js` 文件，用来从 [icanhazdadjoke API](https://icanhazdadjoke.com/api) 获取笑话。
+这个 API 不需要认证，但需要在请求头中设置一些参数。
 
-以下步骤都在 `.github/actions/joke-action` 目录下完成。
+调用该 API 后，我们会收到一个 JSON 对象，格式如下：
 
-我们的 Action 不需要复杂的元数据即可运行。本次我们不会接收任何输入参数，但会定义一个输出参数。
+```json
+{
+  "id": "0LuXvkq4Muc",
+  "joke": "I knew I shouldn't steal a mixer from work, but it was a whisk I was willing to take.",
+  "status": 200
+}
+```
 
-1. 更新元数据文件 `.github/actions/joke-action/action.yml`，内容如下：
+返回的数据包含三个键值对，其中我们只关心 `joke` 字段，它就是笑话的内容。
 
-   ```yaml
-   name: "my joke action"
+**笑话模块实现**
 
-   description: "use an external API to retrieve and display a joke"
+在 `.github/actions/joke-action` 目录下创建文件 `joke.js`，内容如下：
 
-   outputs:
-     joke-output:
-       description: The resulting joke from the icanhazdadjokes API
+```javascript
+const request = require("request-promise");
 
-   runs:
-     using: "node16"
-     main: "main.js"
+const options = {
+  method: "GET",
+  uri: "https://icanhazdadjoke.com/",
+  headers: {
+    Accept: "application/json",
+    "User-Agent": "Writing JavaScript action GitHub Skills course.",
+  },
+  json: true,
+};
+
+async function getJoke() {
+  const res = await request(options);
+  return res.joke;
+}
+
+module.exports = getJoke;
+```
+
+**代码说明：**
+
+* 首先导入我们之前通过 `npm` 安装的 `request-promise` 库；
+* 定义 `options` 对象，其中包含请求方式、目标 URL 以及请求头；
+
+   * `Accept` 表示希望返回 JSON 格式；
+   * `User-Agent` 是 API 要求的标识；
+* 定义一个异步函数 `getJoke()`，发送请求并获取响应；
+* 函数返回 JSON 对象中的 `joke` 字段内容（每次调用都会返回不同的笑话）；
+* 最后通过 `module.exports` 导出函数，以便在 `main.js` 中使用。
+
+### 创建 Action 的主入口
+
+**Main 模块**
+
+在同一目录下创建 `main.js` 文件，内容如下：
+
+```javascript
+const getJoke = require("./joke");
+const core = require("@actions/core");
+
+async function run() {
+  const joke = await getJoke();
+  console.log(joke);
+  core.setOutput("joke-output", joke);
+}
+
+run();
+```
+
+**代码说明：**
+
+* 首先引入我们自己写的 `joke.js` 模块，以及 GitHub 提供的 `@actions/core` 库；
+* 定义一个异步函数 `run()`：
+
+   * 调用 `getJoke()` 获取笑话内容并存入变量 `joke`；
+   * 将笑话打印到控制台；
+   * 使用 `core.setOutput()` 将笑话内容设置为输出参数 `joke-output`（稍后会被其他步骤使用）。
+* 最后调用 `run()` 来执行整个流程。
+
+### :keyboard: 实操环节
+
+1. 创建文件 `.github/actions/joke-action/joke.js`，内容如下：
+
+   ```javascript
+   const request = require("request-promise");
+
+   const options = {
+     method: "GET",
+     uri: "https://icanhazdadjoke.com/",
+     headers: {
+       Accept: "application/json",
+       "User-Agent": "Writing JavaScript action GitHub Skills course.",
+     },
+     json: true,
+   };
+
+   async function getJoke() {
+     const res = await request(options);
+     return res.joke;
+   }
+
+   module.exports = getJoke;
    ```
 
-2. 保存 `action.yml` 文件。
-3. 提交并推送修改到 GitHub：
+2. 保存 `joke.js` 文件。
+3. 创建文件 `.github/actions/joke-action/main.js`，内容如下：
+
+   ```javascript
+   const getJoke = require("./joke");
+   const core = require("@actions/core");
+
+   async function run() {
+     const joke = await getJoke();
+     console.log(joke);
+     core.setOutput("joke-output", joke);
+   }
+
+   run();
+   ```
+
+4. 保存 `main.js` 文件。
+5. 提交修改并推送到 GitHub：
 
    ```shell
-   git add action.yml
-   git pull   
-   git commit -m 'add metadata for the joke action'
+   git add joke.js main.js
+   git commit -m 'creating joke.js and main.js'
+   git pull
    git push
    ```
-4. 等待大约 20 秒后刷新本页面，[GitHub Actions](https://docs.github.com/en/actions) 会自动检测更改并进入下一步。
+
+6. 等待大约 20 秒后刷新本页面。[GitHub Actions](https://docs.github.com/en/actions) 会自动检测更新，并进入下一步。
 
 <footer>
 
