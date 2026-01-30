@@ -1,7 +1,6 @@
 name: JS Actions
 
 on:
-  dispatch:
   issues:
     types: [labeled]
 
