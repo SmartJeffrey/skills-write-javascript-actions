@@ -11,3 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+      - name: ha-ha
+        uses: ./.github/actions/joke-action
+      - name: 输出笑话
+        run: echo "笑话: ${{ steps.ha-ha.outputs.joke-output }}"
